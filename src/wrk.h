@@ -54,6 +54,7 @@ typedef struct connection {
     SSL *ssl;
     uint64_t start;
     size_t written;
+    uint64_t pending;
     char buf[RECVBUF];
 } connection;
 
