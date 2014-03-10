@@ -21,6 +21,7 @@
 #define SOCKET_TIMEOUT_MS   2000
 #define CALIBRATE_DELAY_MS  500
 #define TIMEOUT_INTERVAL_MS 2000
+#define PRINT_STATS_INTERVAL_MS 1000
 
 typedef struct {
     pthread_t thread;
@@ -39,6 +40,8 @@ typedef struct {
     lua_State *L;
     errors errors;
     struct connection *cs;
+    uint64_t partial;
+    int partial_seq;
 } thread;
 
 typedef struct connection {

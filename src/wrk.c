@@ -56,6 +56,15 @@ static void usage() {
            "  Time arguments may include a time unit (2s, 2m, 2h)\n");
 }
 
+static int print_live_stats(aeEventLoop *loop, long long id, void *data) {
+    thread *t = (thread*) data;
+    uint64_t complete = t->partial;
+    t->partial = 0;
+
+    printf("%3d: %lu req/s\n", t->partial_seq++, complete);
+    return PRINT_STATS_INTERVAL_MS;
+}
+
 int main(int argc, char **argv) {
     struct addrinfo *addrs, *addr;
     struct http_parser_url parser_url;
@@ -139,6 +148,8 @@ int main(int argc, char **argv) {
         t->loop        = aeCreateEventLoop(10 + cfg.connections * 3);
         t->connections = connections;
         t->stop_at     = stop_at;
+
+        aeCreateTimeEvent(t->loop, PRINT_STATS_INTERVAL_MS, print_live_stats, t, NULL);
 
         t->L = script_create(schema, host, port, path);
         script_headers(t->L, headers);
@@ -383,6 +394,7 @@ static int response_complete(http_parser *parser) {
     uint64_t now = time_us();
     int status = parser->status_code;
 
+    thread->partial++;
     thread->complete++;
     thread->requests++;
 
