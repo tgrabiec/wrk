@@ -57,11 +57,17 @@ static void usage() {
 }
 
 static int print_live_stats(aeEventLoop *loop, long long id, void *data) {
-    thread *t = (thread*) data;
-    uint64_t complete = t->partial;
-    t->partial = 0;
+    static int seq = 0;
 
-    printf("%3d: %lu req/s\n", t->partial_seq++, complete);
+    thread *threads = (thread*) data;
+    uint64_t total = 0;
+    for (uint64_t i = 0; i < cfg.threads; i++) {
+        thread *t = &threads[i];
+        total += t->partial;
+        t->partial = 0;
+    }
+
+    printf("%3d: %lu req/s\n", seq++, total);
     return PRINT_STATS_INTERVAL_MS;
 }
 
@@ -149,7 +155,9 @@ int main(int argc, char **argv) {
         t->connections = connections;
         t->stop_at     = stop_at;
 
-        aeCreateTimeEvent(t->loop, PRINT_STATS_INTERVAL_MS, print_live_stats, t, NULL);
+        if (i == 0) {
+            aeCreateTimeEvent(t->loop, PRINT_STATS_INTERVAL_MS, print_live_stats, threads, NULL);
+        }
 
         t->L = script_create(schema, host, port, path);
         script_headers(t->L, headers);
